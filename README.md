@@ -1,69 +1,45 @@
-README: User Analysis Project
-This README file provides guidance on completing the various tasks associated with the User Overview, User Engagement, Experience Analytics, and Satisfaction Analysis for a telecom dataset.
-Project Overview
-This project focuses on analyzing user behavior, engagement, and experience using a telecom dataset. The analysis aims to provide insights into user behavior, engagement patterns, and overall customer satisfaction. The tasks are divided into four main sections:
+Telecom User Overview and Engagement Analysis
+Introduction
+This repository provides a comprehensive exploratory analysis of telecom user behavior and engagement using xDR (data session detail records). The primary focus is on understanding user activity patterns, handset preferences, and app-specific engagement metrics. Additionally, the project applies clustering techniques to segment users based on their activity levels, providing insights for targeted marketing and technical improvements.
 
-User Overview Analysis
-User Engagement Analysis
-Experience Analytics
-Dashboard Development & Satisfaction Analysis
-Task Details
+Dataset
+The dataset consists of detailed telecom records that include user sessions, session duration, upload/download data, and application-specific usage metrics (e.g., Social Media, Google, YouTube, etc.). The main features analyzed are user handset types, session metrics, and data traffic.
+
+Task Breakdown
 Task 1: User Overview Analysis
-Conduct a full user overview analysis to understand customer behavior and identify key insights for marketing and business development.
-
-Identify Top Handsets and Manufacturers:
-
-Determine the top 10 handsets used by customers.
-Identify the top 3 handset manufacturers.
-Identify the top 5 handsets for each of the top 3 manufacturers.
-Provide recommendations to marketing teams based on findings.
-Analyze User Behavior on Applications:
-
-Aggregate the number of sessions, session duration, total download (DL), upload (UL), and total data volume for each application.
-Conduct Exploratory Data Analysis (EDA) to understand data distribution, identify missing values, and detect outliers.
-Segment users into decile classes and compute total data per class.
-Analyze metrics such as mean, median, and dispersion.
-Perform correlation and dimensionality reduction analysis.
+Task 1.1: User Behavior Overview
+Top 10 Handsets: Identify the top 10 handsets used by customers.
+Top 3 Manufacturers: Identify the top 3 handset manufacturers.
+Top 5 Handsets per Manufacturer: For each of the top 3 manufacturers, identify the top 5 handsets.
+Marketing Recommendations: Provide short recommendations to marketing teams based on handset popularity.
+Task 1.2: Application Usage Overview
+Aggregate the following metrics per user:
+Number of xDR sessions
+Session duration
+Total download (DL) and upload (UL) data
+Total traffic for each application (Social Media, Google, Email, YouTube, Netflix, Gaming, Others)
+Exploratory Data Analysis (EDA):
+Handle missing values and outliers (replace with mean or appropriate methods).
+Perform descriptive statistics and report the relevant metrics.
+Segment users into deciles based on session duration and compute total data (DL + UL) for each class.
+Conduct both graphical and non-graphical univariate analysis (histograms, boxplots, and descriptive measures).
+Task 1.3: Advanced Analysis
+Bivariate Analysis: Analyze the relationships between application-specific data usage and total data consumption.
+Correlation Matrix: Explore the correlation between application data (Social Media, Google, Email, YouTube, Netflix, Gaming, Others).
+Dimensionality Reduction: Use Principal Component Analysis (PCA) to reduce data dimensions and interpret key insights.
 Task 2: User Engagement Analysis
-Analyze user engagement by tracking activities on applications and metrics like session frequency, duration, and traffic.
-
-Aggregate Engagement Metrics:
-Aggregate session frequency, duration, and traffic per user.
-Normalize engagement metrics and apply k-means clustering (k=3).
-Compute summary statistics (min, max, average, total) for each cluster.
-Plot the most used applications and interpret results.
-Determine the optimal value of k using the elbow method.
-Task 3: Experience Analytics
-Conduct an in-depth analysis of user experience based on network parameters and device characteristics.
-
-Aggregate User Experience Metrics:
-
-Compute average TCP retransmission, RTT, handset type, and throughput per user.
-List the top, bottom, and most frequent values for TCP, RTT, and throughput.
-Analyze distribution and provide interpretations.
-Clustering Analysis:
-Perform k-means clustering (k=3) on experience metrics.
-Describe each cluster based on user experience data.
-Task 4: Dashboard Development & Satisfaction Analysis
-Develop a dashboard and analyze customer satisfaction based on user engagement and experience scores.
-Dashboard Development:
-Design a dashboard using visualization tools to display key insights.
-Ensure the dashboard meets usability, interactivity, visual appeal, and deployment success criteria.
-Satisfaction Analysis:
-Assign engagement and experience scores to users using Euclidean distance.
-Compute satisfaction scores and identify the top 10 satisfied customers.
-Build a regression model to predict satisfaction scores.
-Perform clustering analysis on engagement and experience scores.
-Export final results to a MySQL database.
-Tools and Libraries Required
-Python Libraries:
-pandas, numpy, matplotlib, seaborn
-scikit-learn (for clustering and regression)
-SQLAlchemy (for database interaction)
-Docker or MLOps tools (for model deployment and tracking)
-Visualization Tools:
-Power BI, Tableau, or Python libraries like Plotly or Dash
-Database:
-MySQL
+Task 2.1: Engagement Metrics Aggregation
+Metrics Aggregation:
+Aggregate sessions frequency, session duration, and total traffic per customer (MSISDN).
+Identify the top 10 customers based on each engagement metric.
+Clustering with K-Means:
+Normalize the engagement metrics.
+Use K-Means clustering to classify users into 3 clusters based on their engagement.
+Analyze cluster characteristics (minimum, maximum, mean, and total values).
+Visualize the clusters using appropriate charts.
+Application Traffic Analysis:
+Aggregate total traffic per application for each user and identify the top 10 most engaged users per application.
+Plot the top 3 most used applications by traffic.
+Optimizing Clusters: Use the elbow method to determine the optimal number of clusters (k) and interpret the findings.
 
 
