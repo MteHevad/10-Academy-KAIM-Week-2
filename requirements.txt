@@ -1,0 +1,8 @@
+The code relies on the following libraries:
+- pandas
+- numpy
+- scikit-learn
+- matplotlib
+- seaborn
+- tqdm
+pip install pandas numpy scikit-learn matplotlib seaborn tqdm
