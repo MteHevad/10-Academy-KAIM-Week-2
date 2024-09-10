@@ -1,130 +1,89 @@
-import numpy as np
 import pandas as pd
-from sklearn.metrics.pairwise import euclidean_distances
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error
+import numpy as np
 from sklearn.cluster import KMeans
+from sklearn.linear_model import LinearRegression
+from scipy.spatial.distance import euclidean
 import mysql.connector
-import matplotlib.pyplot as plt
 
-# Step 0: Load the dataset from the specified file path
-file_path = r"C:\Users\hp\Desktop\KAIM\data\Week2_challenge_data_source.csv"
-customer_agg = pd.read_csv(file_path)  # Modify this line if the file is in a different format (e.g., Excel)
+# Load the data
+file_path = "C:/Users/hp/Desktop/KAIM/data/Week2_challenge_data_source.csv"
+data = pd.read_csv(file_path)
 
-# Assume 'scaled_features' contains normalized values of necessary features for clustering.
-# Here, I'm assuming the file contains relevant features for clustering and scoring
+# Task 4.1: Calculate Engagement and Experience Scores
+# Assuming 'engagement_features' and 'experience_features' are the feature sets used for clustering
 
-# Step 1: Engagement & Experience Score Calculation (Task 4.1)
-# ----------------------------------------------------------
+# Use the first clustering results
+kmeans_engagement = KMeans(n_clusters=3).fit(data[engagement_features])
+engagement_clusters = kmeans_engagement.predict(data[engagement_features])
 
-# Assuming the cluster centroids were obtained from prior KMeans clustering (3 clusters)
-# If you haven't performed clustering, do it here
-kmeans = KMeans(n_clusters=3, random_state=42).fit(scaled_features)
-cluster_centroids = kmeans.cluster_centers_
+# Use the second clustering results for experience
+kmeans_experience = KMeans(n_clusters=3).fit(data[experience_features])
+experience_clusters = kmeans_experience.predict(data[experience_features])
 
-# Assuming cluster 0 is less engaged, and cluster 2 is the worst experience
-less_engaged_cluster = cluster_centroids[0]  # Less engaged
-worst_experience_cluster = cluster_centroids[2]  # Worst experience
+# Get cluster centers for engagement and experience
+less_engaged_cluster_center = kmeans_engagement.cluster_centers_[0]  # Assuming 0 is the least engaged cluster
+worst_experience_cluster_center = kmeans_experience.cluster_centers_[-1]  # Assuming -1 is the worst experience cluster
 
-# Calculate Euclidean distances for engagement and experience
-customer_agg['Engagement Score'] = euclidean_distances(scaled_features, [less_engaged_cluster]).flatten()
-customer_agg['Experience Score'] = euclidean_distances(scaled_features, [worst_experience_cluster]).flatten()
+# Calculate Engagement and Experience scores using Euclidean distance
+data['Engagement_Score'] = data[engagement_features].apply(lambda x: euclidean(x, less_engaged_cluster_center), axis=1)
+data['Experience_Score'] = data[experience_features].apply(lambda x: euclidean(x, worst_experience_cluster_center), axis=1)
 
-# Step 2: Satisfaction Score Calculation (Task 4.2)
-# ------------------------------------------------
-customer_agg['Satisfaction Score'] = (customer_agg['Engagement Score'] + customer_agg['Experience Score']) / 2
+# Task 4.2: Calculate Satisfaction Score and Report Top 10 Satisfied Customers
+data['Satisfaction_Score'] = data[['Engagement_Score', 'Experience_Score']].mean(axis=1)
 
-# Report Top 10 Satisfied Customers
-top_10_satisfied = customer_agg[['MSISDN/Number', 'Satisfaction Score']].sort_values(by='Satisfaction Score', ascending=False).head(10)
-print("Top 10 Satisfied Customers:\n", top_10_satisfied)
+# Sort and report the top 10 satisfied customers
+top_10_satisfied = data.nlargest(10, 'Satisfaction_Score')
 
-# Step 3: Build a Regression Model to Predict Satisfaction Score (Task 4.3)
-# -----------------------------------------------------------------------
-# Features: Engagement Score & Experience Score
-X = customer_agg[['Engagement Score', 'Experience Score']]
-y = customer_agg['Satisfaction Score']
+# Task 4.3: Build a Regression Model to Predict Satisfaction Score
+X = data[['Engagement_Score', 'Experience_Score']]  # Features
+y = data['Satisfaction_Score']  # Target
 
-# Split data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+reg_model = LinearRegression().fit(X, y)
+data['Predicted_Satisfaction_Score'] = reg_model.predict(X)
 
-# Initialize and train a linear regression model
-model = LinearRegression()
-model.fit(X_train, y_train)
+# Task 4.4: K-means Clustering (k=2) on Engagement & Experience Scores
+kmeans_satisfaction = KMeans(n_clusters=2).fit(data[['Engagement_Score', 'Experience_Score']])
+data['Satisfaction_Cluster'] = kmeans_satisfaction.predict(data[['Engagement_Score', 'Experience_Score']])
 
-# Predict satisfaction score on test data
-y_pred = model.predict(X_test)
+# Task 4.5: Aggregate Average Satisfaction & Experience per Cluster
+cluster_aggregation = data.groupby('Satisfaction_Cluster').agg({
+    'Satisfaction_Score': 'mean',
+    'Experience_Score': 'mean'
+}).reset_index()
 
-# Evaluate model performance
-mse = mean_squared_error(y_test, y_pred)
-print(f"Mean Squared Error of the model: {mse}")
+# Task 4.6: Export Final Table to MySQL Database
 
-# Step 4: K-Means Clustering (k=2) on Engagement & Experience Scores (Task 4.4)
-# ---------------------------------------------------------------------------
-kmeans_2 = KMeans(n_clusters=2, random_state=42)
-customer_agg['Engagement-Experience Cluster'] = kmeans_2.fit_predict(customer_agg[['Engagement Score', 'Experience Score']])
-
-# Step 5: Aggregate Satisfaction & Experience Scores per Cluster (Task 4.5)
-# ------------------------------------------------------------------------
-cluster_agg = customer_agg.groupby('Engagement-Experience Cluster').agg({
-    'Satisfaction Score': 'mean',
-    'Experience Score': 'mean'
-})
-
-print("\nAverage Satisfaction & Experience Scores per Cluster:\n", cluster_agg)
-
-# Step 6: Export Data to MySQL Database (Task 4.6)
-# -----------------------------------------------
-# Connect to MySQL database (replace with your database credentials)
-db_connection = mysql.connector.connect(
+# MySQL connection setup (use your credentials)
+connection = mysql.connector.connect(
     host="localhost",
     user="your_username",
     password="your_password",
     database="your_database"
 )
 
-cursor = db_connection.cursor()
+cursor = connection.cursor()
 
-# Create table for customer satisfaction data if not already present
-create_table_query = '''
-CREATE TABLE IF NOT EXISTS customer_satisfaction (
-    MSISDN_Number BIGINT PRIMARY KEY,
-    Engagement_Score FLOAT,
-    Experience_Score FLOAT,
-    Satisfaction_Score FLOAT
+# Create table if not exists
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS satisfaction_analysis (
+    user_id VARCHAR(255),
+    engagement_score FLOAT,
+    experience_score FLOAT,
+    satisfaction_score FLOAT
 )
-'''
-cursor.execute(create_table_query)
+""")
 
-# Insert customer data into the MySQL table
-insert_query = '''
-INSERT INTO customer_satisfaction (MSISDN_Number, Engagement_Score, Experience_Score, Satisfaction_Score)
-VALUES (%s, %s, %s, %s)
-'''
+# Insert data into MySQL
+for index, row in data.iterrows():
+    cursor.execute("""
+        INSERT INTO satisfaction_analysis (user_id, engagement_score, experience_score, satisfaction_score)
+        VALUES (%s, %s, %s, %s)
+    """, (row['user_id'], row['Engagement_Score'], row['Experience_Score'], row['Satisfaction_Score']))
 
-# Prepare the data to insert
-data_to_insert = customer_agg[['MSISDN/Number', 'Engagement Score', 'Experience Score', 'Satisfaction Score']].values.tolist()
-cursor.executemany(insert_query, data_to_insert)
-
-# Commit the transaction
-db_connection.commit()
-
-# Verify the inserted data by running a select query
-cursor.execute("SELECT * FROM customer_satisfaction LIMIT 5")
-for row in cursor.fetchall():
-    print(row)
-
-# Close the cursor and connection
+# Commit and close connection
+connection.commit()
 cursor.close()
-db_connection.close()
+connection.close()
 
-# Visualization (Optional, if required)
-# ------------------------------------
-# Scatter plot for Engagement vs Experience Score colored by Clusters
-plt.figure(figsize=(8, 6))
-plt.scatter(customer_agg['Engagement Score'], customer_agg['Experience Score'], c=customer_agg['Engagement-Experience Cluster'], cmap='viridis')
-plt.title('Engagement vs Experience Scores (Clustered)')
-plt.xlabel('Engagement Score')
-plt.ylabel('Experience Score')
-plt.colorbar(label='Cluster')
-plt.show()
+# Print a screenshot of the database content
+# This would typically be done in a SQL client like MySQL Workbench to show the screenshot
